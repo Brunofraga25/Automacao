@@ -1,6 +1,8 @@
 
 from pathlib import Path
 import shutil
+from datetime import datetime, timedelta
+from send2trash import send2trash
 
 # 1. Localização da pasta Downloads
 PASTA_DOWNLOADS = Path.home() / "Downloads"
@@ -56,16 +58,16 @@ def formatar_tamanho(bytes_):
 
 
 # 5. Retorna os arquivos diretamente na pasta Downloads
-def listar_arquivos():
+def listar_todos_arquivos():
     return [
-        item for item in PASTA_DOWNLOADS.iterdir()
+        item for item in PASTA_DOWNLOADS.rglob("*")
         if item.is_file()
     ]
 
 
 # 6. Lista os arquivos encontrados
 def mostrar_arquivos():
-    arquivos = listar_arquivos()
+    arquivos = listar_todos_arquivos()
 
     if not arquivos:
         print("\nNenhum arquivo encontrado na raiz de Downloads.")
@@ -104,7 +106,7 @@ def escolher_destino_unico(pasta_destino, nome_arquivo):
 
 # 8. Organiza os arquivos por categoria
 def organizar_arquivos():
-    arquivos = listar_arquivos()
+    arquivos = listar_todos_arquivos()
 
     if not arquivos:
         print("\nNão há arquivos para organizar.")
@@ -175,7 +177,7 @@ def buscar_por_extensao():
         extensao = "." + extensao
 
     encontrados = [
-        arquivo for arquivo in listar_arquivos()
+        arquivo for arquivo in listar_todos_arquivos()
         if arquivo.suffix.lower() == extensao
     ]
 
@@ -188,7 +190,7 @@ def buscar_por_extensao():
 # 10. Calcula o espaço ocupado pelos arquivos
 def analisar_espaco():
     total_bytes = 0
-    arquivos = listar_arquivos()
+    arquivos = listar_todos_arquivos()
 
     for arquivo in arquivos:
         try:
@@ -199,6 +201,68 @@ def analisar_espaco():
     print(f"\nArquivos analisados: {len(arquivos)}")
     print(f"Espaço ocupado: {formatar_tamanho(total_bytes)}")
 
+# Identifica e envia arquivos antigos para a Lixeira
+def limpar_arquivos_antigos():
+    dias_limite = 7
+
+    # Calcula a data e hora limite
+    data_limite = datetime.now() - timedelta(days=dias_limite)
+
+    arquivos = listar_todos_arquivos()
+    arquivos_antigos = []
+
+    # Identifica arquivos modificados antes da data limite
+    for arquivo in arquivos:
+        try:
+            data_modificacao = datetime.fromtimestamp(
+                arquivo.stat().st_mtime
+            )
+
+            if data_modificacao < data_limite:
+                arquivos_antigos.append(arquivo)
+
+        except OSError as erro:
+            print(f"Não foi possível analisar {arquivo.name}: {erro}")
+
+    # Verifica se encontrou arquivos antigos
+    if not arquivos_antigos:
+        print("\nNenhum arquivo com mais de 7 dias foi encontrado.")
+        return
+
+    # Exibe a lista antes de qualquer movimentação
+    print("\n--- Arquivos antigos encontrados ---")
+
+    for arquivo in arquivos_antigos:
+        print(arquivo.name)
+
+    print(f"\nTotal encontrado: {len(arquivos_antigos)} arquivos")
+
+    # Solicita confirmação
+    confirmacao = input(
+        "\nEnviar esses arquivos para a Lixeira? (S/N): "
+    ).strip().lower()
+
+    if confirmacao != "s":
+        print("\nOperação cancelada. Nenhum arquivo foi enviado.")
+        return
+
+    # Envia os arquivos selecionados para a Lixeira
+    enviados = 0
+    falhas = 0
+
+    for arquivo in arquivos_antigos:
+        try:
+            send2trash(str(arquivo))
+            print(f"Enviado para a Lixeira: {arquivo.name}")
+            enviados += 1
+
+        except OSError as erro:
+            print(f"Erro ao processar {arquivo.name}: {erro}")
+            falhas += 1
+
+    print("\n--- Resultado da limpeza ---")
+    print(f"Arquivos enviados para a Lixeira: {enviados}")
+    print(f"Falhas: {falhas}")
 
 # 11. Exibe o menu principal
 def mostrar_menu():
@@ -209,7 +273,8 @@ def mostrar_menu():
     print("2 - Organizar arquivos")
     print("3 - Buscar por extensão")
     print("4 - Analisar espaço ocupado")
-    print("5 - Sair")
+    print("5 - Limpar arquivos com mais de 7 dias")
+    print("6 - Sair")
     print("=" * 35)
 
 
@@ -236,6 +301,9 @@ def main():
             analisar_espaco()
 
         elif opcao == "5":
+            limpar_arquivos_antigos()
+
+        elif opcao == "6":
             print("\nPrograma encerrado.")
             break
 
