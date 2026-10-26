@@ -39,7 +39,7 @@ O aplicativo foi pensado para facilitar essa rotina, ajudando a identificar arqu
 
 A ferramenta é um recurso auxiliar de organização e **não garante, isoladamente, a conformidade com a Lei Geral de Proteção de Dados (LGPD)**. A utilização adequada também depende das políticas da organização, dos prazos de retenção aplicáveis e dos procedimentos de segurança adotados.
 
-## 🛠️ Tecnologias utilizadas
+## Tecnologias utilizadas
 
 - **Python:** linguagem principal do projeto.
 - **Tkinter:** desenvolvimento da interface gráfica.
